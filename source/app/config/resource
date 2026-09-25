@@ -1,0 +1,29 @@
+{
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "fnos-share-customizer/data",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "fnos-share-customizer"
+                    ]
+                }
+            },
+            {
+                "name": "fnos-share-customizer/config",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "fnos-share-customizer"
+                    ]
+                }
+            }
+        ]
+    },
+    "port": 38080
+}

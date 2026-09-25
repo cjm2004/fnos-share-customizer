@@ -1,0 +1,26 @@
+#!/bin/bash
+
+APP_DIR="${TRIM_APPDEST}"
+STATE_DIR="/usr/local/share/fnos-custom"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${TRIM_PKGVAR}/info.log"
+}
+
+log_msg "Post-install: Setting up share customizer"
+
+install -d -o root -g root -m 755 "$STATE_DIR" "${STATE_DIR}/uploads" "${STATE_DIR}/backups"
+
+if [[ -f "${APP_DIR}/bin/apply.sh" ]]; then
+    chmod +x "${APP_DIR}/bin/apply.sh"
+    chmod +x "${APP_DIR}/bin/restore.sh"
+    chmod +x "${APP_DIR}/bin/mount-assets.sh"
+fi
+
+# 安装后若已有旧配置和已生成页面，立即恢复自定义挂载；首次安装仍由用户点击应用。
+if [[ -x "${APP_DIR}/bin/mount-assets.sh" && -f "${STATE_DIR}/share-index.html" ]]; then
+    "${APP_DIR}/bin/mount-assets.sh" 2 >> "${TRIM_PKGVAR}/info.log" 2>&1 || true
+fi
+
+log_msg "Post-install completed"
+exit 0

@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飞牛分享页自定义</title>
+<style>
+:root{--primary:#2b6cff;--bg:#f5f6fa;--card:#fff;--text:#333;--border:#e0e0e0;--radius:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6;padding:20px}
+.container{max-width:900px;margin:0 auto}
+.header{text-align:center;padding:30px 0 20px}
+.header h1{font-size:24px;color:var(--primary)}
+.header p{font-size:14px;color:#888;margin-top:4px}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:0 2px 8px rgba(0,0,0,.08);padding:24px;margin-bottom:16px}
+.card h2{font-size:16px;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:#555}
+.form-group input[type="text"],.form-group input[type="color"],.form-group input[type="number"],.form-group select{width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:14px;outline:none;transition:border-color .2s}
+.form-group input:focus{border-color:var(--primary)}
+.form-group input[type="color"]{height:40px;padding:4px;cursor:pointer}
+.form-group input[type="range"]{width:100%;margin:4px 0}
+.form-group .range-value{font-size:12px;color:#888;text-align:right}
+.check-row{display:flex;align-items:center;gap:8px;font-size:13px;color:#555;cursor:pointer}
+.check-row input{width:16px;height:16px;accent-color:var(--primary)}
+.field-hint{font-size:11px;color:#999;margin-top:4px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.btn{padding:10px 24px;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;transition:opacity .2s}
+.btn:hover{opacity:.85}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-success{background:#52c41a;color:#fff}
+.btn-danger{background:#ff4d4f;color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border);color:#666}
+.btn-group{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
+.logo-upload{border:2px dashed var(--border);border-radius:var(--radius);padding:30px;text-align:center;cursor:pointer;transition:border-color .3s;position:relative}
+.logo-upload:hover{border-color:var(--primary)}
+.logo-upload.has-image{border-style:solid;padding:12px}
+.logo-upload img{max-width:200px;max-height:200px;display:block;margin:0 auto 8px;border-radius:4px}
+.logo-upload .hint{font-size:13px;color:#888}
+.logo-upload input[type="file"]{display:none}
+.status-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px}
+.status-item{background:#f8f9fb;border-radius:6px;padding:12px;text-align:center}
+.status-item .label{font-size:12px;color:#888}
+.status-item .value{font-size:18px;font-weight:700;margin-top:4px}
+.status-item .value.ok{color:#52c41a}
+.status-item .value.fail{color:#ff4d4f}
+.toast{position:fixed;top:20px;right:20px;padding:12px 20px;border-radius:6px;color:#fff;font-size:14px;z-index:9999;opacity:0;transform:translateY(-20px);transition:all .3s}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast.success{background:#52c41a}
+.toast.error{background:#ff4d4f}
+.preview-section{margin-top:16px;border:1px solid var(--border);border-radius:var(--radius);padding:16px;background:#fafafa}
+.preview-section h3{font-size:13px;color:#888;margin-bottom:12px}
+.preview-frame{width:100%;height:400px;border:1px solid var(--border);border-radius:4px}
+.settings-layout{display:grid;grid-template-columns:180px minmax(0,1fr);gap:16px;align-items:start}
+.category-nav{display:flex;flex-direction:column;gap:4px;background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:6px;position:sticky;top:20px;z-index:10}
+.category-tab{width:100%;padding:11px 12px;border:0;border-radius:6px;background:transparent;color:#666;font-size:13px;text-align:left;cursor:pointer;white-space:nowrap}
+.category-tab.active{background:var(--primary);color:#fff;font-weight:600}
+.category-content{min-width:0}
+.action-card{grid-column:2;width:100%}
+.ad-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.ad-upload{border:1px solid var(--border);border-radius:6px;padding:14px;background:#fafafa}
+.ad-upload label{display:block;font-size:13px;font-weight:600;margin-bottom:8px}
+.ad-upload input[type=file]{display:none}
+.ad-upload .upload-btn{display:inline-flex;align-items:center;justify-content:center;min-height:38px;padding:8px 16px;border:1px solid var(--primary);border-radius:6px;background:var(--primary);color:#fff;font-size:13px;font-weight:600;cursor:pointer;user-select:none;position:relative;z-index:1}.ad-upload .upload-btn:focus,.ad-upload .upload-btn:focus-visible{outline:3px solid rgba(43,108,255,.25);outline-offset:2px}
+.ad-upload .upload-btn:hover{background:#f0f5ff}
+.ad-preview{height:96px;margin:10px 0;border:1px dashed var(--border);background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;color:#aaa;font-size:12px;cursor:pointer}
+.ad-preview:hover{border-color:var(--primary);color:var(--primary)}
+.ad-preview img{display:block;max-width:100%;max-height:100%;object-fit:contain}
+.ad-preview.empty::before{content:'暂无广告图片'}
+.ad-upload .check-row{margin-top:10px}
+.ad-upload .check-row input:disabled{opacity:.5}
+.ad-upload[data-uploaded='true']{border-color:#b7eb8f;background:#fbfff8}
+@media(max-width:680px){body{padding:12px}.settings-layout{display:block}.category-nav{position:static;display:grid;grid-template-columns:1fr 1fr;margin-bottom:16px}.category-tab{text-align:center}.action-card{width:100%}.ad-grid{grid-template-columns:1fr}.header{padding:18px 0 14px}.card{padding:18px}}
+.category-panel{display:none}
+.category-panel.active{display:block}
+.subnav{display:flex;gap:8px;flex-wrap:wrap;margin:0 0 12px}
+.subnav button{border:1px solid var(--border);background:#fff;color:#666;border-radius:6px;padding:7px 12px;font-size:12px;cursor:pointer}
+.subnav button.active{border-color:var(--primary);color:var(--primary);background:#f3f6ff}
+.category-intro{font-size:12px;color:#999;margin:0 0 12px}
+.card[data-subcategory]{display:none}
+.card[data-subcategory].active{display:block}
+.header{position:relative}
+.donate-btn{position:absolute;top:18px;right:18px;display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border:1px solid var(--border);border-radius:20px;background:#fff;color:#e24b4a;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.06)}
+.donate-btn:hover{border-color:#e24b4a;background:#fff5f5}
+.donate-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:1000}
+.donate-modal-bg.open{display:flex}
+.donate-modal{background:#fff;border-radius:12px;padding:26px 24px;max-width:520px;width:100%;text-align:center;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+.donate-modal h3{font-size:18px;color:var(--text);margin:0 0 4px}
+.donate-modal .sub{font-size:13px;color:#888;margin:0 0 18px}
+.donate-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.donate-item{border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafafa}
+.donate-item img{width:100%;max-width:200px;height:auto;display:block;margin:0 auto 10px;border-radius:6px}
+.donate-item .name{font-size:14px;font-weight:600;color:var(--text)}
+.donate-thanks{font-size:12px;color:#999;margin-top:16px}
+.donate-close{margin-top:16px;padding:8px 28px;border:none;border-radius:6px;background:var(--primary);color:#fff;font-size:14px;cursor:pointer}
+@media(max-width:680px){.donate-btn{top:12px;right:12px;padding:6px 12px}.donate-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header"><h1>飞牛分享页自定义</h1><p>配置并应用 fnOS 文件分享页的显示效果</p><button class="donate-btn" type="button" onclick="openDonate()">赞赏支持</button></div>
+<div class="card">
+<h2>运行状态</h2>
+<p class="section-hint">查看分享服务和当前自定义页面是否正常工作。</p>
+<div class="status-grid" id="statusGrid"></div>
+</div>
+
+<div class="card">
+<h2>版本更新</h2>
+<p class="section-hint">检查「分享页自定义」是否有新版本。</p>
+<div style="display:flex;align-items:center;justify-content:space-between;gap:12px">
+<span id="currentVersionLabel" style="font-weight:600;color:var(--text)">当前版本 —</span>
+<button class="btn btn-outline" type="button" id="checkUpdateBtn" onclick="checkUpdate(false)">检查更新</button>
+</div>
+<div id="updateNotice" style="display:none;margin-top:12px;padding:10px 14px;background:#fff1f0;border:1px solid #ffccc7;border-radius:6px;color:#cf1322;font-size:13px"></div>
+</div>
+
+<div class="settings-layout">
+<nav class="category-nav" aria-label="设置分类">
+<button class="category-tab" data-category="appearance" onclick="switchCategory('appearance')">页面外观</button>
+<button class="category-tab active" data-category="ads" onclick="switchCategory('ads')">广告展示</button>
+<button class="category-tab" data-category="buttons" onclick="switchCategory('buttons')">按钮与布局</button>
+<button class="category-tab" data-category="text" onclick="switchCategory('text')">文字内容</button>
+<button class="category-tab" data-category="password" onclick="switchCategory('password')">密码页</button>
+<button class="category-tab" data-category="advanced" onclick="switchCategory('advanced')">高级设置</button>
+</nav>
+<div class="category-content">
+<div id="category-appearance" class="category-panel">
+<p class="category-intro">调整分享页的视觉风格、Logo 和文件列表显示。</p>
+<div class="subnav">
+<button class="active" data-subcategory="brand" onclick="switchSubcategory('appearance','brand')">Logo 与品牌</button>
+<button data-subcategory="colors" onclick="switchSubcategory('appearance','colors')">背景与颜色</button>
+</div>
+<div class="card active" data-subcategory="brand" data-category="appearance">
+<h2>Logo 与品牌</h2><p class="section-hint">上传分享页 Logo，并设置点击后的跳转行为。</p>
+<div class="logo-upload" id="logoUpload" role="button" tabindex="0" onclick="if(event.target.id !== 'logoInput') document.getElementById('logoInput').click()" onkeydown="if(event.key === 'Enter' || event.key === ' ') document.getElementById('logoInput').click()"><img id="logoPreview" style="display:none" alt="logo"><div class="hint" id="logoHint">点击上传 Logo 图片 (PNG/JPG，最大 5MB)</div><input type="file" id="logoInput" accept="image/png,image/jpeg,image/webp"></div>
+<div class="form-group" style="margin-top:16px"><label>Logo 点击跳转地址</label><input type="text" id="logoLink" placeholder="https://www.example.com"><div class="field-hint">留空则点击 Logo 不跳转</div></div>
+<label class="check-row"><input type="checkbox" id="logoLinkNewTab">在新窗口打开</label>
+</div>
+<div class="card" data-subcategory="colors" data-category="appearance">
+<h2>背景与颜色</h2><p class="section-hint">设置页面底色、主题色，以及文件列表的普通和悬停状态。</p>
+<div class="form-row"><div class="form-group"><label>背景颜色</label><input type="color" id="bgColor" value="#ffffff"></div><div class="form-group"><label>主题颜色</label><input type="color" id="primaryColor" value="#2b6cff"></div></div>
+<div class="form-row"><div class="form-group"><label>文件所在横栏颜色</label><input type="color" id="fileRowColor" value="#ffffff"></div><div class="form-group"><label>文件横栏鼠标悬停颜色</label><input type="color" id="fileRowHoverColor" value="#f5f7fa"></div></div>
+<div class="form-group"><label>文件页背景图片</label><input type="file" id="fileBgInput" accept="image/*"><div class="field-hint" id="fileBgStatus">未上传，最大 10MB</div></div>
+</div>
+</div>
+
+<div id="category-ads" class="category-panel active">
+<p class="category-intro">广告上传入口已直接显示在下方。建议优先使用顶部或底部横幅：手机端宽度会自动适配；左右广告仅在电脑端显示，避免遮挡文件内容。</p>
+<div class="card"><h2>广告展示</h2><p class="section-hint">上传后先在这里确认图片，再勾选启用并点击“保存配置”和“应用到分享页”。顶部和底部会出现在内容上下方，左右广告只在宽屏显示。</p>
+<div class="ad-grid">
+<div class="ad-upload" data-ad-slot="top"><label>顶部横幅广告</label><div class="ad-preview empty" id="adTopPreview" role="button" tabindex="0" aria-label="选择顶部广告图片"></div><input type="file" id="adTopInput" accept="image/*"><label class="upload-btn" for="adTopInput">选择图片上传</label><div class="field-hint">建议尺寸：1200 × 180 px，最大 10MB</div><div class="field-hint" id="adTopStatus">未上传</div><label class="check-row"><input type="checkbox" id="adTopEnabled">启用顶部广告</label></div>
+<div class="ad-upload" data-ad-slot="bottom"><label>底部横幅广告</label><div class="ad-preview empty" id="adBottomPreview" role="button" tabindex="0" aria-label="选择底部广告图片"></div><input type="file" id="adBottomInput" accept="image/*"><label class="upload-btn" for="adBottomInput">选择图片上传</label><div class="field-hint">建议尺寸：1200 × 180 px，最大 10MB</div><div class="field-hint" id="adBottomStatus">未上传</div><label class="check-row"><input type="checkbox" id="adBottomEnabled">启用底部广告</label></div>
+<div class="ad-upload" data-ad-slot="left"><label>左侧广告（仅电脑端）</label><div class="ad-preview empty" id="adLeftPreview" role="button" tabindex="0" aria-label="选择左侧广告图片"></div><input type="file" id="adLeftInput" accept="image/*"><label class="upload-btn" for="adLeftInput">选择图片上传</label><div class="field-hint">建议尺寸：180 × 600 px，最大 10MB</div><div class="field-hint" id="adLeftStatus">未上传</div><label class="check-row"><input type="checkbox" id="adLeftEnabled">启用左侧广告</label></div>
+<div class="ad-upload" data-ad-slot="right"><label>右侧广告（仅电脑端）</label><div class="ad-preview empty" id="adRightPreview" role="button" tabindex="0" aria-label="选择右侧广告图片"></div><input type="file" id="adRightInput" accept="image/*"><label class="upload-btn" for="adRightInput">选择图片上传</label><div class="field-hint">建议尺寸：180 × 600 px，最大 10MB</div><div class="field-hint" id="adRightStatus">未上传</div><label class="check-row"><input type="checkbox" id="adRightEnabled">启用右侧广告</label></div>
+</div></div></div>
+
+<div id="category-buttons" class="category-panel">
+<p class="category-intro">单独调整下载、转存按钮的外观、显示和排列方式。</p>
+<div class="card">
+<h2>按钮样式</h2><p class="section-hint">下载和转存按钮可以分别设置样式与颜色。</p>
+<div class="form-row"><div class="form-group"><label>下载按钮样式</label><select id="downloadBtnVariant"><option value="solid">纯色填充</option><option value="soft">浅色填充</option><option value="outline">边框按钮</option><option value="text">透明按钮</option></select></div><div class="form-group"><label>转存按钮样式</label><select id="transferBtnVariant"><option value="solid">纯色填充</option><option value="soft">浅色填充</option><option value="outline">边框按钮</option><option value="text">透明按钮</option></select></div></div>
+<div class="form-row"><div class="form-group"><label>下载按钮背景/边框颜色</label><input type="color" id="downloadBtnColor" value="#2b6cff"></div><div class="form-group"><label>下载按钮文字颜色</label><input type="color" id="downloadBtnTextColor" value="#ffffff"></div></div>
+<div class="form-row"><div class="form-group"><label>转存按钮背景/边框颜色</label><input type="color" id="transferBtnColor" value="#e8efff"></div><div class="form-group"><label>转存按钮文字颜色</label><input type="color" id="transferBtnTextColor" value="#2b6cff"></div></div>
+</div>
+<div class="card">
+<h2>按钮布局</h2><p class="section-hint">控制按钮宽度、左右顺序、圆角，以及是否显示按钮。</p>
+<div class="form-group"><label>按钮宽度</label><select id="buttonWidthLayout"><option value="download_wide">下载较宽</option><option value="equal">两个等宽</option><option value="transfer_wide">转存较宽</option></select></div><div class="form-group"><label>按钮顺序</label><select id="buttonOrder"><option value="transfer_left">打开 App 在左</option><option value="download_left">下载在左</option></select></div><div class="form-group"><label>按钮圆角</label><select id="buttonBorderRadius"><option value="0px">直角</option><option value="4px">小圆角</option><option value="6px">标准圆角</option><option value="12px">大圆角</option><option value="999px">胶囊形</option></select></div><div class="form-row"><label class="check-row"><input type="checkbox" id="showDownloadAll">显示下载按钮</label><label class="check-row"><input type="checkbox" id="showTransferButton">显示转存按钮</label></div>
+</div>
+</div>
+
+<div id="category-text" class="category-panel">
+<p class="category-intro">编辑分享页标题、浏览器标题和页脚文字。</p>
+<div class="card"><h2>页面文字</h2><p class="section-hint">这些文字会显示在分享页标题区域、浏览器标签和页面底部。</p><div class="form-row"><div class="form-group"><label>标题文字</label><input type="text" id="titleText" placeholder="文件分享"></div><div class="form-group"><label>底部文字</label><input type="text" id="footerText" placeholder="shared by cjm"></div></div><div class="form-group"><label>浏览器标签标题</label><input type="text" id="browserTitle" placeholder="文件分享"><div class="field-hint">站点图标使用上传的 Logo</div></div></div>
+</div>
+
+<div id="category-password" class="category-panel">
+<p class="category-intro">密码访问页单独使用这些样式和提示文字，不影响文件分享页。</p>
+<div class="card"><h2>密码页样式</h2><p class="section-hint">设置密码页标题、提示、颜色和图片资源。</p><div class="form-row"><div class="form-group"><label>密码页标题</label><input type="text" id="passwordTitle"></div><div class="form-group"><label>密码输入提示</label><input type="text" id="passwordHint"></div></div><div class="form-row"><div class="form-group"><label>密码区域背景</label><input type="color" id="passwordBgColor" value="#ffffff"></div><div class="form-group"><label>确定按钮颜色</label><input type="color" id="passwordBtnColor" value="#2b6cff"></div></div><div class="form-group"><label>确定按钮文字颜色</label><input type="color" id="passwordBtnTextColor" value="#ffffff"></div><div class="form-group"><label>密码页背景图片</label><input type="file" id="passwordBgInput" accept="image/*"><div class="field-hint" id="passwordBgStatus">未上传，最大 10MB</div></div><div class="form-group"><label>密码页图标</label><input type="file" id="passwordLogoInput" accept="image/*"><div class="field-hint" id="passwordLogoStatus">未上传，最大 5MB</div></div><div class="form-group"><label>密码页底部文字</label><input type="text" id="passwordFooterText" placeholder="Copyright © 广州铁刃智造技术有限公司 版权所有"></div></div>
+</div>
+
+<div id="category-advanced" class="category-panel">
+<p class="category-intro">处理错误提示、主题预设、配置迁移和分享页宽度等高级选项。</p>
+<div class="card"><h2>错误页文字</h2><p class="section-hint">自定义链接异常时用户看到的提示信息。</p><div class="form-group"><label>无效链接</label><input type="text" id="errorInvalidLink"></div><div class="form-group"><label>访问次数达上限</label><input type="text" id="errorLinkExceeded"></div><div class="form-group"><label>链接已过期</label><input type="text" id="errorLinkExpired"></div><div class="form-group"><label>文件不存在</label><input type="text" id="errorFileMissing"></div></div>
+<div class="card"><h2>预设与配置迁移</h2><p class="section-hint">用预设快速改变配色，或导入导出 JSON 备份配置。</p><div class="form-row"><div class="form-group"><label>配色预设</label><select id="themePreset"><option value="light">明亮蓝</option><option value="dark">深色</option><option value="brand">品牌绿</option></select></div><div class="form-group" style="display:flex;align-items:end"><button class="btn btn-outline" type="button" onclick="applyPreset()">应用预设到表单</button></div></div><div class="btn-group"><button class="btn btn-outline" type="button" onclick="exportConfig()">导出 JSON</button><button class="btn btn-outline" type="button" onclick="document.getElementById('configImport').click()">导入 JSON</button><input type="file" id="configImport" accept="application/json,.json" style="display:none"></div><div class="field-hint">导入后会保存配置，需再点击“应用到分享页”。</div></div>
+<div class="card"><h2>页面布局</h2><p class="section-hint">限制分享页内容区域的最大宽度。</p><div class="form-group"><label>页面最大宽度</label><input type="text" id="pageMaxWidth" placeholder="800px" value="800px"></div></div>
+</div>
+<div class="card action-card">
+<h2>操作</h2><p class="section-hint">保存只写入配置文件；应用才会生成并挂载分享页。配置文件保存在系统数据目录，重启和升级不会自动清空。</p>
+<div class="btn-group"><button class="btn btn-primary" type="button" onclick="saveConfig()">保存配置</button><button class="btn btn-success" type="button" onclick="applyConfig(this)">应用到分享页</button><button class="btn btn-outline" type="button" onclick="loadConfig()">刷新配置</button><button class="btn btn-danger" type="button" onclick="restoreOriginal(this)">恢复原始页</button></div>
+</div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+let currentConfig = {};
+
+function switchCategory(category) {
+    document.querySelectorAll('.category-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.category === category));
+    document.querySelectorAll('.category-panel').forEach(panel => panel.classList.toggle('active', panel.id === 'category-' + category));
+}
+
+function switchSubcategory(category, subcategory) {
+    const panel = document.getElementById('category-' + category);
+    if (!panel) return;
+    panel.querySelectorAll('.subnav button').forEach(button => button.classList.toggle('active', button.dataset.subcategory === subcategory));
+    panel.querySelectorAll('.card[data-subcategory]').forEach(card => card.classList.toggle('active', card.dataset.subcategory === subcategory));
+}
+
+function toast(msg, type) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast ' + type + ' show';
+    clearTimeout(t._hide);
+    t._hide = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+async function api(method, path, body) {
+    const opts = { method };
+    if (body instanceof FormData) {
+        opts.body = body;
+    } else if (body) {
+        opts.headers = { 'Content-Type': 'application/json' };
+        opts.body = JSON.stringify(body);
+    }
+    try {
+        const r = await fetch(path, opts);
+        const data = await r.json();
+        if (!r.ok && data.success !== false) return { success: false, error: '请求失败: ' + r.status };
+        return data;
+    } catch (error) {
+        return { success: false, error: '网络请求失败，请检查连接后重试' };
+    }
+}
+
+async function loadConfig() {
+    const data = await api('GET', '/api/config');
+    if (data.success && data.config) {
+        currentConfig = data.config;
+        applyConfigToForm(data.config);
+    }
+    loadStatus();
+}
+
+function applyConfigToForm(cfg) {
+    document.getElementById('downloadBtnVariant').value = cfg.download_button_variant || 'solid';
+    document.getElementById('downloadBtnColor').value = cfg.download_button_color || '#2b6cff';
+    document.getElementById('downloadBtnTextColor').value = cfg.download_button_text_color || '#ffffff';
+    document.getElementById('transferBtnVariant').value = cfg.transfer_button_variant || 'soft';
+    document.getElementById('transferBtnColor').value = cfg.transfer_button_color || '#e8efff';
+    document.getElementById('transferBtnTextColor').value = cfg.transfer_button_text_color || '#2b6cff';
+    document.getElementById('buttonWidthLayout').value = cfg.button_width_layout || 'download_wide';
+    document.getElementById('buttonOrder').value = cfg.button_order || 'transfer_left';
+    document.getElementById('buttonBorderRadius').value = cfg.button_border_radius || '6px';
+    document.getElementById('bgColor').value = cfg.background_color || '#ffffff';
+    document.getElementById('primaryColor').value = cfg.primary_color || '#2b6cff';
+    document.getElementById('fileRowColor').value = cfg.file_row_color || '#ffffff';
+    document.getElementById('fileRowHoverColor').value = cfg.file_row_hover_color || '#f5f7fa';
+    document.getElementById('titleText').value = cfg.title_text || '\u6587\u4ef6\u5206\u4eab';
+    document.getElementById('footerText').value = cfg.footer_text || 'shared by cjm';
+    document.getElementById('browserTitle').value = cfg.browser_title || '\u6587\u4ef6\u5206\u4eab';
+    document.getElementById('passwordTitle').value = cfg.password_title || '\u8f93\u5165\u5bc6\u7801\u4ee5\u8bbf\u95ee\u6587\u4ef6';
+    document.getElementById('passwordHint').value = cfg.password_hint || '\u8bf7\u8f93\u5165\u5206\u4eab\u5bc6\u7801';
+    document.getElementById('passwordBgColor').value = cfg.password_background_color || '#ffffff';
+    document.getElementById('passwordBtnColor').value = cfg.password_button_color || '#2b6cff';
+    document.getElementById('passwordBtnTextColor').value = cfg.password_button_text_color || '#ffffff';
+    document.getElementById('passwordFooterText').value = cfg.password_footer_text || 'Copyright © 广州铁刃智造技术有限公司 版权所有';
+    document.getElementById('errorInvalidLink').value = cfg.error_invalid_link || '\u65e0\u6548\u94fe\u63a5\uff0c\u8bf7\u8054\u7cfb\u5206\u4eab\u8005\u3002';
+    document.getElementById('errorLinkExceeded').value = cfg.error_link_exceeded || '\u8be5\u94fe\u63a5\u8bbf\u95ee\u6b21\u6570\u5df2\u8fbe\u9650\u5236\uff0c\u8bf7\u8054\u7cfb\u5206\u4eab\u8005\u3002';
+    document.getElementById('errorLinkExpired').value = cfg.error_link_expired || '\u8be5\u94fe\u63a5\u5df2\u8fc7\u671f\uff0c\u8bf7\u8054\u7cfb\u5206\u4eab\u8005\u3002';
+    document.getElementById('errorFileMissing').value = cfg.error_file_missing || '\u6587\u4ef6\u4e0d\u5b58\u5728\uff0c\u8bf7\u8054\u7cfb\u5206\u4eab\u8005\u3002';
+    document.getElementById('logoLink').value = cfg.logo_link || '';
+    document.getElementById('logoLinkNewTab').checked = !!cfg.logo_link_new_tab;
+    document.getElementById('showDownloadAll').checked = cfg.show_download_all !== false;
+    document.getElementById('showTransferButton').checked = cfg.show_transfer_button !== false;
+    document.getElementById('pageMaxWidth').value = cfg.page_max_width || '800px';
+    ['top','bottom','left','right'].forEach(slot => { document.getElementById('ad' + slot[0].toUpperCase() + slot.slice(1) + 'Enabled').checked = !!cfg['ad_' + slot + '_enabled']; });
+            updateUploadStatus(cfg, currentConfig.uploaded);
+    updateAdPreviews(currentConfig.uploaded);
+}
+
+function updateAdPreviews(uploaded) {
+    uploaded = uploaded || {};
+    ['top','bottom','left','right'].forEach(slot => {
+        const preview = document.getElementById('ad' + slot[0].toUpperCase() + slot.slice(1) + 'Preview');
+        const card = preview && preview.closest('.ad-upload');
+        const exists = !!uploaded['ad_' + slot];
+        if (!preview) return;
+        preview.innerHTML = '';
+        preview.classList.toggle('empty', !exists);
+        if (exists) {
+            const img = document.createElement('img');
+            img.src = '/api/ad/' + slot + '?' + Date.now();
+            img.alt = slot + ' 广告预览';
+            preview.appendChild(img);
+        }
+        if (card) card.dataset.uploaded = exists ? 'true' : 'false';
+    });
+}
+
+function updateUploadStatus(cfg, uploaded) {
+    uploaded = uploaded || {};
+    const uploads = [
+        ['fileBgStatus', uploaded.file_background || cfg.file_background_image, '已上传', '未上传，最大 10MB'],
+        ['passwordBgStatus', uploaded.password_background || cfg.password_background_image, '已上传', '未上传，最大 10MB'],
+        ['passwordLogoStatus', uploaded.password_logo || cfg.password_logo_uploaded, '已上传', '未上传，最大 5MB']
+    ];
+    ['top','bottom','left','right'].forEach(slot => uploads.push([
+        'ad' + slot[0].toUpperCase() + slot.slice(1) + 'Status',
+        uploaded['ad_' + slot] || cfg['ad_' + slot + '_enabled'],
+        '已上传' + (cfg['ad_' + slot + '_enabled'] ? '并启用' : '，未启用'),
+        '未上传'
+    ]));
+    uploads.forEach(([id, isUploaded, readyText, emptyText]) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = isUploaded ? readyText : emptyText;
+    });
+}
+
+function getConfigFromForm() {
+    return {
+        download_button_variant: document.getElementById('downloadBtnVariant').value,
+        download_button_color: document.getElementById('downloadBtnColor').value,
+        download_button_text_color: document.getElementById('downloadBtnTextColor').value,
+        transfer_button_variant: document.getElementById('transferBtnVariant').value,
+        transfer_button_color: document.getElementById('transferBtnColor').value,
+        transfer_button_text_color: document.getElementById('transferBtnTextColor').value,
+        button_width_layout: document.getElementById('buttonWidthLayout').value,
+        button_order: document.getElementById('buttonOrder').value,
+        button_border_radius: document.getElementById('buttonBorderRadius').value,
+        background_color: document.getElementById('bgColor').value,
+        primary_color: document.getElementById('primaryColor').value,
+        file_row_color: document.getElementById('fileRowColor').value,
+        file_row_hover_color: document.getElementById('fileRowHoverColor').value,
+        title_text: document.getElementById('titleText').value,
+        footer_text: document.getElementById('footerText').value,
+        browser_title: document.getElementById('browserTitle').value,
+        password_title: document.getElementById('passwordTitle').value,
+        password_hint: document.getElementById('passwordHint').value,
+        password_background_color: document.getElementById('passwordBgColor').value,
+        password_button_color: document.getElementById('passwordBtnColor').value,
+        password_button_text_color: document.getElementById('passwordBtnTextColor').value,
+        password_footer_text: document.getElementById('passwordFooterText').value,
+        error_invalid_link: document.getElementById('errorInvalidLink').value,
+        error_link_exceeded: document.getElementById('errorLinkExceeded').value,
+        error_link_expired: document.getElementById('errorLinkExpired').value,
+        error_file_missing: document.getElementById('errorFileMissing').value,
+        logo_link: document.getElementById('logoLink').value.trim(),
+        logo_link_new_tab: document.getElementById('logoLinkNewTab').checked,
+        show_download_all: document.getElementById('showDownloadAll').checked,
+        show_transfer_button: document.getElementById('showTransferButton').checked,
+        page_max_width: document.getElementById('pageMaxWidth').value,
+        ad_top_enabled: document.getElementById('adTopEnabled').checked,
+        ad_bottom_enabled: document.getElementById('adBottomEnabled').checked,
+        ad_left_enabled: document.getElementById('adLeftEnabled').checked,
+        ad_right_enabled: document.getElementById('adRightEnabled').checked
+    };
+}
+
+async function uploadBackground(input, endpoint, statusId, configKey, maxSize = 10 * 1024 * 1024) {
+    const file = input.files[0];
+    if (!file) return;
+    if (file.size > maxSize) { toast(maxSize <= 5 * 1024 * 1024 ? '\u5BC6\u7801\u9875 Logo \u4E0D\u80FD\u8D85\u8FC7 5MB' : '\u80CC\u666F\u56FE\u7247\u4E0D\u80FD\u8D85\u8FC7 10MB', 'error'); return; }
+    const fd = new FormData(); fd.append('image', file);
+    const data = await api('POST', endpoint, fd);
+    if (data.success) {
+        document.getElementById(statusId).textContent = '\u5DF2\u4E0A\u4F20';
+        currentConfig[configKey] = true;
+        if (endpoint.indexOf('/api/upload-ad/') === 0) {
+            const slot = endpoint.split('/').pop();
+            updateAdPreviews(Object.assign({}, currentConfig.uploaded, { ['ad_' + slot]: true }));
+        }
+        toast(endpoint.indexOf('/api/upload-ad/') === 0 ? '\u5E7F\u544A\u4E0A\u4F20\u6210\u529F' : '\u80CC\u666F\u56FE\u7247\u4E0A\u4F20\u6210\u529F', 'success');
+    }
+    else toast('\u4E0A\u4F20\u5931\u8D25: ' + (data.error || '\u672A\u77E5\u9519\u8BEF'), 'error');
+}
+
+document.getElementById('passwordBgInput').addEventListener('change', e => uploadBackground(e.target, '/api/upload-password-background', 'passwordBgStatus', 'password_background_image'));
+document.getElementById('fileBgInput').addEventListener('change', e => uploadBackground(e.target, '/api/upload-file-background', 'fileBgStatus', 'file_background_image'));
+document.getElementById('passwordLogoInput').addEventListener('change', e => uploadBackground(e.target, '/api/upload-password-logo', 'passwordLogoStatus', 'password_logo_uploaded', 5 * 1024 * 1024));
+['top','bottom','left','right'].forEach(slot => {
+    const name = slot[0].toUpperCase() + slot.slice(1);
+    const input = document.getElementById('ad' + name + 'Input');
+    const preview = document.getElementById('ad' + name + 'Preview');
+    input.addEventListener('change', e => uploadBackground(e.target, '/api/upload-ad/' + slot, 'ad' + name + 'Status', 'ad_' + slot + '_enabled'));
+    preview.addEventListener('click', () => input.click());
+    // 上传按钮使用 label[for] 触发原生文件选择，避免重复触发。
+    preview.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            input.click();
+        }
+    });
+});
+
+function applyPreset() {
+    const presets = {
+        light: { bgColor:'#ffffff', primaryColor:'#2b6cff', fileRowColor:'#ffffff', fileRowHoverColor:'#f5f7fa', downloadBtnColor:'#2b6cff', downloadBtnTextColor:'#ffffff', transferBtnColor:'#e8efff', transferBtnTextColor:'#2b6cff', passwordBgColor:'#ffffff', passwordBtnColor:'#2b6cff', passwordBtnTextColor:'#ffffff' },
+        dark: { bgColor:'#181a1f', primaryColor:'#4f8cff', fileRowColor:'#24272e', fileRowHoverColor:'#30343d', downloadBtnColor:'#4f8cff', downloadBtnTextColor:'#ffffff', transferBtnColor:'#303b52', transferBtnTextColor:'#8bb3ff', passwordBgColor:'#24272e', passwordBtnColor:'#4f8cff', passwordBtnTextColor:'#ffffff' },
+        brand: { bgColor:'#f7faf8', primaryColor:'#16865c', fileRowColor:'#ffffff', fileRowHoverColor:'#edf7f2', downloadBtnColor:'#16865c', downloadBtnTextColor:'#ffffff', transferBtnColor:'#dff2e9', transferBtnTextColor:'#116a49', passwordBgColor:'#ffffff', passwordBtnColor:'#16865c', passwordBtnTextColor:'#ffffff' }
+    };
+    const preset = presets[document.getElementById('themePreset').value];
+    Object.entries(preset).forEach(([id, value]) => document.getElementById(id).value = value);
+    toast('\u9884\u8bbe\u5df2\u5e94\u7528\u5230\u8868\u5355', 'success');
+}
+
+function exportConfig() {
+    const blob = new Blob([JSON.stringify(getConfigFromForm(), null, 2)], { type: 'application/json' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = 'fnos-share-customizer-config.json';
+    link.click();
+    URL.revokeObjectURL(link.href);
+}
+
+document.getElementById('configImport').addEventListener('change', async function(e) {
+    try {
+        const cfg = JSON.parse(await e.target.files[0].text());
+        if (!cfg || Array.isArray(cfg) || typeof cfg !== 'object') throw new Error();
+        const data = await api('POST', '/api/config', cfg);
+        if (!data.success) throw new Error(data.error || '');
+        currentConfig = data.config;
+        applyConfigToForm(data.config);
+        toast('\u914d\u7f6e\u5df2\u5bfc\u5165\u5e76\u4fdd\u5b58', 'success');
+    } catch (_) {
+        toast('\u5bfc\u5165\u5931\u8d25\uff1aJSON \u6587\u4ef6\u65e0\u6548', 'error');
+    }
+    e.target.value = '';
+});
+
+async function saveConfig() {
+    const cfg = getConfigFromForm();
+    const data = await api('POST', '/api/config', cfg);
+    if (data.success) {
+        currentConfig = data.config;
+        toast('\u914d\u7f6e\u5df2\u4fdd\u5b58', 'success');
+    } else {
+        toast('\u4fdd\u5b58\u5931\u8d25: ' + (data.error || '\u672a\u77e5\u9519\u8bef'), 'error');
+    }
+}
+
+async function applyConfig(button) {
+    const btn = button || document.querySelector('.action-card .btn-success');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>\u5E94\u7528\u4E2D...';
+    const data = await api('POST', '/api/apply');
+    btn.disabled = false;
+    btn.textContent = '\u5E94\u7528\u5230\u5206\u4EAB\u9875';
+    if (data.success) {
+        toast('\u5DF2\u5E94\u7528\u5230\u5206\u4EAB\u9875', 'success');
+        loadStatus();
+    } else {
+        toast('\u5E94\u7528\u5931\u8D25: ' + (data.error || data.output || '\u672a\u77e5\u9519\u8bef'), 'error');
+    }
+}
+
+async function restoreOriginal(button) {
+    if (!confirm('\u786E\u5B9A\u8981\u6062\u590D\u5230\u539F\u59CB\u5206\u4EAB\u9875\u5417\uFF1F')) return;
+    const btn = button || document.querySelector('.action-card .btn-danger');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span>\u6062\u590D\u4E2D...';
+    const data = await api('POST', '/api/restore');
+    btn.disabled = false;
+    btn.textContent = '\u6062\u590D\u539F\u59CB\u9875';
+    if (data.success) {
+        toast('\u5DF2\u6062\u590D\u539F\u59CB\u9875', 'success');
+        loadStatus();
+    } else {
+        toast('\u6062\u590D\u5931\u8D25: ' + (data.error || data.output || '\u672a\u77e5\u9519\u8bef'), 'error');
+    }
+}
+
+function renderVersion(v) {
+    const el = document.getElementById('currentVersionLabel');
+    if (el && v) el.textContent = '当前版本 v' + v;
+}
+
+async function checkUpdate(silent) {
+    const btn = document.getElementById('checkUpdateBtn');
+    if (btn) btn.disabled = true;
+    const data = await api('GET', '/api/update/check');
+    if (btn) btn.disabled = false;
+    if (data && data.current_version) renderVersion(data.current_version);
+    if (!data || !data.success) {
+        if (!silent) toast('检查更新失败: ' + ((data && data.error) || '未知错误'), 'error');
+        return;
+    }
+    const u = data.update || {};
+    if (u.update_available) promptUpdate(u);
+    else if (!silent) toast('当前已是最新版本', 'success');
+}
+
+function promptUpdate(u) {
+    const forced = u.update_mode === 'forced';
+    const notes = u.release_notes ? '\n\n更新说明：\n' + u.release_notes : '';
+    const msg = '检测到「分享页自定义」有新版本 v' + (u.version || '') + '，是否立即更新？' + notes;
+    const notice = document.getElementById('updateNotice');
+    if (notice) {
+        if (forced) {
+            notice.style.display = 'block';
+            notice.textContent = '检测到强制更新 v' + (u.version || '') + '，请尽快完成更新。';
+        } else {
+            notice.style.display = 'none';
+        }
+    }
+    if (confirm(msg)) goUpdate(u);
+}
+
+function goUpdate(u) {
+    const url = u.cloud_url || u.direct_url;
+    if (url) {
+        window.open(url, '_blank');
+        toast('已打开下载页面', 'success');
+    } else {
+        toast('暂无可用下载地址，请稍后在更新管理器查看', 'error');
+    }
+}
+
+async function loadStatus() {
+    const data = await api('GET', '/api/status');
+    if (!data.success) return;
+    const s = data.status;
+    renderVersion(s.app_version);
+    updateUploadStatus(s.config || currentConfig, s.uploaded);
+    updateAdPreviews(s.uploaded);
+    const grid = document.getElementById('statusGrid');
+    grid.innerHTML = '';
+    const items = [
+        { label: '\u5206\u4EAB\u9875\u670D\u52A1', key: 'service_active', okLabel: '\u8FD0\u884C\u4E2D', failLabel: '\u505C\u6B62' },
+        { label: '\u81EA\u5B9A\u4E49\u9875\u9762', key: 'has_custom', okLabel: '\u5DF2\u5B58\u5728', failLabel: '\u672A\u521B\u5EFA' },
+        { label: 'Logo', key: 'has_logo', okLabel: '\u5DF2\u4E0A\u4F20', failLabel: '\u672A\u4E0A\u4F20' },
+    ];
+    items.forEach(item => {
+        const ok = s[item.key];
+        const div = document.createElement('div');
+        div.className = 'status-item';
+        div.innerHTML = '<div class="label">' + item.label + '</div><div class="value ' + (ok ? 'ok' : 'fail') + '">' + (ok ? item.okLabel : item.failLabel) + '</div>';
+        grid.appendChild(div);
+    });
+}
+
+document.getElementById('logoInput').addEventListener('change', async function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+        toast('\u56FE\u7247\u5927\u5C0F\u4E0D\u80FD\u8D85\u8FC7 5MB', 'error');
+        return;
+    }
+    const fd = new FormData();
+    fd.append('logo', file);
+    const data = await api('POST', '/api/upload-logo', fd);
+    if (data.success) {
+        const img = document.getElementById('logoPreview');
+        img.src = '/api/logo?' + Date.now();
+        img.style.display = 'block';
+        document.getElementById('logoHint').textContent = '\u70B9\u51FB\u66F4\u6362 Logo';
+        document.getElementById('logoUpload').classList.add('has-image');
+        toast('Logo \u4E0A\u4F20\u6210\u529F', 'success');
+        loadStatus();
+    } else {
+        toast('\u4E0A\u4F20\u5931\u8D25: ' + (data.error || '\u672A\u77E5\u9519\u8BEF'), 'error');
+    }
+});
+
+async function loadLogo() {
+    const img = document.getElementById('logoPreview');
+    const r = await fetch('/api/logo');
+    if (r.ok) {
+        img.src = '/api/logo?' + Date.now();
+        img.style.display = 'block';
+        document.getElementById('logoHint').textContent = '\u70B9\u51FB\u66F4\u6362 Logo';
+        document.getElementById('logoUpload').classList.add('has-image');
+    }
+}
+
+loadConfig();
+loadLogo();
+checkUpdate(true);
+
+function openDonate() { document.getElementById('donateModal').classList.add('open'); }
+function closeDonate() { document.getElementById('donateModal').classList.remove('open'); }
+</script>
+<div class="donate-modal-bg" id="donateModal" onclick="if(event.target===this)closeDonate()">
+<div class="donate-modal">
+<h3>赞赏支持</h3>
+<p class="sub">如果这个应用对你有帮助，欢迎扫码支持</p>
+<div class="donate-grid">
+<div class="donate-item"><img src="/static/donate/wechat.png" alt="微信收款码"><div class="name" style="color:#07c160">微信</div></div>
+<div class="donate-item"><img src="/static/donate/alipay.jpg" alt="支付宝收款码"><div class="name" style="color:#1677ff">支付宝</div></div>
+</div>
+<p class="donate-thanks">感谢你的支持，这会让这个项目走得更远</p>
+<button class="donate-close" type="button" onclick="closeDonate()">关闭</button>
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,20 @@
+#!/bin/bash
+set +e
+
+LOG_FILE="${TRIM_PKGVAR:-/tmp}/info.log"
+STATE_DIR="/usr/local/share/fnos-custom"
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE" 2>/dev/null || true
+}
+
+# Keep upgrade completion independent from the share service. The user can
+# explicitly apply the saved configuration after the new package is running.
+if [[ -n "${TRIM_APPDEST:-}" ]]; then
+    chmod 755 "${TRIM_APPDEST}/bin/apply.sh" "${TRIM_APPDEST}/bin/restore.sh" "${TRIM_APPDEST}/bin/mount-assets.sh" 2>/dev/null || true
+    # 升级替换应用目录后，基于当前系统入口重新生成页面并建立挂载。
+    if [[ -f "${STATE_DIR}/share-index.html" && -x "${TRIM_APPDEST}/bin/mount-assets.sh" ]]; then
+        "${TRIM_APPDEST}/bin/mount-assets.sh" 2 >> "$LOG_FILE" 2>&1 || true
+    fi
+fi
+log_msg "Post-upgrade completed"
+exit 0

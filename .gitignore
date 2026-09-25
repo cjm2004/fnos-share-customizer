@@ -1,0 +1,20 @@
+# Local workspace state
+.minicode/
+.workbuddy/
+.tmp-preview/
+
+# Python caches
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+# Local integration references (not part of the application source)
+fnos-update-manager.md
+fnos-update-manager.skill
+fnos-update-manager.txt
+
+# Temporary and local files
+*.tmp
+*.log
+.DS_Store
+Thumbs.db

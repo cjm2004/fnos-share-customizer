@@ -1,0 +1,49 @@
+#!/bin/bash
+set +e
+
+STATE_DIR="/usr/local/share/fnos-custom"
+SERVICE=""
+MODULE_DIR=""
+STATIC_DIR=""
+
+for candidate in "/usr/trim/www/modules/trim_sharelink" "/usr/trim/www/modules/trim-sharelink" "/usr/local/share/trim_sharelink"; do
+    if [[ -d "$candidate" ]]; then
+        MODULE_DIR="$candidate"
+        STATIC_DIR="$candidate/s"
+        break
+    fi
+done
+for candidate in trim_sharelink.service trim-sharelink.service; do
+    if systemctl cat "$candidate" >/dev/null 2>&1; then
+        SERVICE="$candidate"
+        break
+    fi
+done
+[[ -n "$SERVICE" ]] || SERVICE="trim_sharelink.service"
+OVERRIDE_DIR="/etc/systemd/system/${SERVICE}.d"
+OVERRIDE_FILE="${OVERRIDE_DIR}/custom-share-page.conf"
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "${TRIM_PKGVAR:-/tmp}/uninstall.log"
+}
+
+log_msg "Uninstall: Restoring original share page"
+
+if [[ -n "$MODULE_DIR" ]]; then
+    systemctl stop "$SERVICE" >/dev/null 2>&1 || true
+    for target in index.html favicon.ico password-background.png file-background.png password-logo.png ad-top.png ad-bottom.png ad-left.png ad-right.png; do
+        mountpoint -q "${MODULE_DIR}/${target}" && umount "${MODULE_DIR}/${target}" >/dev/null 2>&1 || true
+        mountpoint -q "${STATIC_DIR}/${target}" && umount "${STATIC_DIR}/${target}" >/dev/null 2>&1 || true
+    done
+    rm -f "${MODULE_DIR}/password-background.png" "${MODULE_DIR}/file-background.png" "${MODULE_DIR}/password-logo.png" "${MODULE_DIR}/ad-top.png" "${MODULE_DIR}/ad-bottom.png" "${MODULE_DIR}/ad-left.png" "${MODULE_DIR}/ad-right.png"
+    rm -f "${STATIC_DIR}/password-background.png" "${STATIC_DIR}/file-background.png" "${STATIC_DIR}/password-logo.png" "${STATIC_DIR}/ad-top.png" "${STATIC_DIR}/ad-bottom.png" "${STATIC_DIR}/ad-left.png" "${STATIC_DIR}/ad-right.png"
+    touch "${STATE_DIR}/disabled"
+fi
+
+rm -f "$OVERRIDE_FILE"
+rmdir "$OVERRIDE_DIR" 2>/dev/null || true
+systemctl daemon-reload >/dev/null 2>&1 || true
+[[ -n "$MODULE_DIR" ]] && systemctl start "$SERVICE" >/dev/null 2>&1 || true
+
+log_msg "Uninstall cleanup completed"
+exit 0

@@ -1,0 +1,122 @@
+#!/bin/bash
+
+LOG_FILE="${TRIM_PKGVAR}/info.log"
+PID_FILE="${TRIM_PKGVAR}/app.pid"
+PORT="${TRIM_PORT:-38080}"
+HOST="${TRIM_HOST:-::}"
+
+APP_DIR="${TRIM_APPDEST}"
+APP_SERVER_DIR="${TRIM_APPDEST}/server"
+SERVER_SCRIPT="${APP_SERVER_DIR}/server.py"
+MOUNT_SCRIPT="${APP_DIR}/bin/mount-assets.sh"
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> ${LOG_FILE}
+}
+
+start_process() {
+    if status; then
+        return 0
+    fi
+
+    log_msg "Starting web config server on ${HOST}:${PORT} ..."
+
+    if [[ ! -f "$SERVER_SCRIPT" ]]; then
+        log_msg "ERROR: Server script not found at ${SERVER_SCRIPT}"
+        return 1
+    fi
+
+    cd "$APP_DIR"
+    PORT="${PORT}" HOST="${HOST}" python3 "$SERVER_SCRIPT" >> ${LOG_FILE} 2>&1 &
+    printf "%s" "$!" > ${PID_FILE}
+
+    sleep 2
+    if check_process "$!"; then
+        # 管理服务启动后基于当前系统入口重建分享页挂载，避免系统重启后回到原页面。
+        if [[ -x "$MOUNT_SCRIPT" && -f "/usr/local/share/fnos-custom/share-index.html" ]]; then
+            "$MOUNT_SCRIPT" 2 >> "${LOG_FILE}" 2>&1 || true
+        fi
+        log_msg "Server started (PID: $!)"
+        return 0
+    else
+        log_msg "Failed to start server"
+        return 1
+    fi
+}
+
+stop_process() {
+    log_msg "Stopping process ..."
+
+    if [ -r "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+
+        if ! check_process "${pid}"; then
+            rm -f "${PID_FILE}"
+            log_msg "Process not running, removed pid file"
+            return
+        fi
+
+        log_msg "Sending TERM to PID:${pid}..."
+        kill -TERM ${pid} >> ${LOG_FILE} 2>&1
+
+        local count=0
+        while check_process "${pid}" && [ $count -lt 10 ]; do
+            sleep 1
+            count=$((count + 1))
+            log_msg "Waiting... (${count}s/10s)"
+        done
+
+        if check_process "${pid}"; then
+            log_msg "Sending KILL to PID:${pid}..."
+            kill -KILL "${pid}" 2>/dev/null || true
+            sleep 1
+        fi
+        rm -f "${PID_FILE}"
+    fi
+
+    return 0
+}
+
+check_process() {
+    local pid=$1
+    if kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+status() {
+    if [ -f "${PID_FILE}" ]; then
+        pid=$(head -n 1 "${PID_FILE}" | tr -d '[:space:]')
+        if check_process "${pid}"; then
+            return 0
+        else
+            rm -f "${PID_FILE}"
+        fi
+    fi
+    return 1
+}
+
+case $1 in
+start)
+    start_process
+    ;;
+stop)
+    stop_process
+    ;;
+status)
+    if status; then
+        exit 0
+    else
+        exit 3
+    fi
+    ;;
+restart)
+    stop_process
+    sleep 1
+    start_process
+    ;;
+*)
+    exit 1
+    ;;
+esac

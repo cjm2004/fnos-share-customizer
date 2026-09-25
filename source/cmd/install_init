@@ -1,0 +1,25 @@
+#!/bin/bash
+
+# Pre-install checks
+
+if [[ $(id -u) -ne 0 ]]; then
+    echo "This application requires root privileges to install."
+    exit 1
+fi
+
+if ! command -v python3 &>/dev/null; then
+    echo "Python 3 is required but not found."
+    exit 1
+fi
+
+if ! command -v systemctl &>/dev/null; then
+    echo "systemctl is required but not found."
+    exit 1
+fi
+
+MODULE_DIR="/usr/trim/www/modules/trim_sharelink"
+if [[ ! -d "$MODULE_DIR" ]]; then
+    echo "Warning: fnOS share module not found at ${MODULE_DIR}. The app will be installed but may require the share module to function."
+fi
+
+exit 0

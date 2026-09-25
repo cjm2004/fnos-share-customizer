@@ -1,0 +1,16 @@
+appname               = fnos-share-customizer
+version               = 2.0.0
+display_name          = 分享页自定义
+desc                  = 飞牛NAS文件分享页自定义配置工具。基于 fnOS 分享页实际页面结构，支持密码页 Logo 与版权文字、背景图片、按钮顺序、主题预设、配置导入导出及可靠卸载清理。
+platform              = all
+source                = thirdparty
+maintainer            = 无名的小卒
+maintainer_url        = https://github.com/cjm2004
+distributor           = 无名的小卒
+distributor_url       = https://github.com/cjm2004
+desktop_uidir         = ui
+desktop_applaunchname = fnos-share-customizer.App
+service_port          = 38080
+service_name          = fnos-share-customizer
+os_min_version        = 0.8.42
+checksum              = 6282fc5cf36fd62d046d5551ec7dda35

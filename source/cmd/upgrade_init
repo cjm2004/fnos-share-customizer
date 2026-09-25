@@ -1,0 +1,19 @@
+#!/bin/bash
+set +e
+
+STATE_DIR="/usr/local/share/fnos-custom"
+BACKUP_DIR="${STATE_DIR}/backups"
+LOG_FILE="${TRIM_PKGVAR:-/tmp}/info.log"
+mkdir -p "$BACKUP_DIR" 2>/dev/null || true
+
+log_msg() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" >> "$LOG_FILE" 2>/dev/null || true
+}
+
+log_msg "Pre-upgrade: Backing up current config"
+if [[ -f "${STATE_DIR}/web-config.json" ]]; then
+    cp -f "${STATE_DIR}/web-config.json" "${BACKUP_DIR}/web-config.pre-upgrade.json" 2>/dev/null || true
+    log_msg "Config backed up"
+fi
+
+exit 0
