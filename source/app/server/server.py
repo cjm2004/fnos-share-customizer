@@ -51,7 +51,10 @@ GITHUB_API_URL = os.environ.get(
 
 
 def app_version():
-    """从 manifest 读取当前版本；找不到时回退到与 manifest 保持一致的常量。"""
+    """当前版本：优先读 fnOS 注入的 TRIM_APPVER，再退回 manifest，最后用常量兜底。"""
+    env_ver = os.environ.get("TRIM_APPVER", "").strip()
+    if env_ver:
+        return env_ver
     here = os.path.dirname(os.path.abspath(__file__))
     for root in (here, os.path.dirname(here), os.path.dirname(os.path.dirname(here))):
         manifest = os.path.join(root, "manifest")
@@ -65,7 +68,7 @@ def app_version():
                         return match.group(1)
         except OSError:
             continue
-    return "2.0.0"
+    return "2.0.1"
 
 
 APP_VERSION = app_version()
