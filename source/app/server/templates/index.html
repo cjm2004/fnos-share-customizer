@@ -93,6 +93,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .donate-item .name{font-size:14px;font-weight:600;color:var(--text)}
 .donate-thanks{font-size:12px;color:#999;margin-top:16px}
 .donate-close{margin-top:16px;padding:8px 28px;border:none;border-radius:6px;background:var(--primary);color:#fff;font-size:14px;cursor:pointer}
+.update-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:20px;z-index:1100}
+.update-modal-bg.open{display:flex}
+.update-modal{background:#fff;border-radius:12px;padding:26px 24px;max-width:520px;width:100%;box-shadow:0 8px 30px rgba(0,0,0,.2)}
+.update-modal h3{font-size:18px;color:var(--text);margin:0 0 8px}
+.update-modal .ver{font-size:14px;color:#555;margin:0 0 10px}
+.update-modal .ver b{color:var(--primary)}
+.update-modal .notes{font-size:13px;color:#666;white-space:pre-wrap;overflow-wrap:anywhere;max-height:180px;overflow:auto;background:#f8f9fb;border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin:0 0 16px}
+.update-modal .gh{font-size:13px;color:#888;margin:0 0 16px}
+.update-modal .actions{display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap}
+.update-modal .btn-big{flex:1;min-width:160px;padding:12px 20px;border:none;border-radius:8px;background:var(--primary);color:#fff;font-size:15px;font-weight:700;cursor:pointer;text-decoration:none;text-align:center;display:inline-block}
+.update-modal .btn-big:hover{opacity:.85}
 @media(max-width:680px){.donate-btn{top:12px;right:12px;padding:6px 12px}.donate-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -193,6 +204,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 <div class="toast" id="toast"></div>
 <script>
 let currentConfig = {};
+let LAST_UPDATE = null;
 
 function switchCategory(category) {
     document.querySelectorAll('.category-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.category === category));
@@ -485,14 +497,16 @@ async function checkUpdate(silent) {
         return;
     }
     const u = data.update || {};
+    LAST_UPDATE = data;
     if (u.update_available) promptUpdate(u);
     else if (!silent) toast('当前已是最新版本', 'success');
 }
 
 function promptUpdate(u) {
+    const data = LAST_UPDATE || {};
+    const gh = data.github || {};
+    const githubOnly = !!data.github_only;
     const forced = u.update_mode === 'forced';
-    const notes = u.release_notes ? '\n\n更新说明：\n' + u.release_notes : '';
-    const msg = '检测到「分享页自定义」有新版本 v' + (u.version || '') + '，是否立即更新？' + notes;
     const notice = document.getElementById('updateNotice');
     if (notice) {
         if (forced) {
@@ -502,17 +516,45 @@ function promptUpdate(u) {
             notice.style.display = 'none';
         }
     }
-    if (confirm(msg)) goUpdate(u);
+
+    const ver = u.version || gh.version || '';
+    document.getElementById('updateVer').innerHTML =
+        '当前 v' + (data.current_version || '?') + ' → 新版本 <b>v' + ver + '</b>';
+    document.getElementById('updateNotes').textContent =
+        u.release_notes || u.error || '（本次更新未提供说明）';
+
+    const ghLine = document.getElementById('updateGh');
+    if (gh.version) {
+        ghLine.style.display = 'block';
+        ghLine.textContent = 'GitHub 最新版本：v' + gh.version;
+    } else {
+        ghLine.style.display = 'none';
+    }
+
+    const btn = document.getElementById('updatePrimaryBtn');
+    const url = githubOnly ? (gh.url || u.cloud_url) : (u.direct_url || u.cloud_url);
+    btn.dataset.url = url || '';
+    if (githubOnly) btn.textContent = '前往 GitHub 下载';
+    else if (u.direct_url) btn.textContent = '立即下载';
+    else if (url) btn.textContent = '前往下载页';
+    else { btn.textContent = '知道了'; btn.dataset.url = ''; }
+
+    document.getElementById('updateLaterBtn').style.display = forced ? 'none' : 'inline-block';
+    document.getElementById('updateModal').classList.add('open');
 }
 
-function goUpdate(u) {
-    const url = u.cloud_url || u.direct_url;
+function goUpdate() {
+    const btn = document.getElementById('updatePrimaryBtn');
+    const url = btn.dataset.url;
     if (url) {
         window.open(url, '_blank');
         toast('已打开下载页面', 'success');
-    } else {
-        toast('暂无可用下载地址，请稍后在更新管理器查看', 'error');
     }
+    closeUpdate();
+}
+
+function closeUpdate() {
+    document.getElementById('updateModal').classList.remove('open');
 }
 
 async function loadStatus() {
@@ -589,6 +631,18 @@ function closeDonate() { document.getElementById('donateModal').classList.remove
 </div>
 <p class="donate-thanks">感谢你的支持，这会让这个项目走得更远</p>
 <button class="donate-close" type="button" onclick="closeDonate()">关闭</button>
+</div>
+</div>
+<div class="update-modal-bg" id="updateModal" onclick="if(event.target===this)closeUpdate()">
+<div class="update-modal">
+<h3>发现新版本</h3>
+<p class="ver" id="updateVer"></p>
+<p class="gh" id="updateGh" style="display:none"></p>
+<p class="notes" id="updateNotes"></p>
+<div class="actions">
+<button class="btn btn-outline" type="button" id="updateLaterBtn" onclick="closeUpdate()">稍后再说</button>
+<a class="btn-big" id="updatePrimaryBtn" href="javascript:void(0)" onclick="goUpdate()">前往下载页</a>
+</div>
 </div>
 </div>
 </body>

@@ -6,6 +6,8 @@ import shutil
 import mimetypes
 import subprocess
 import socket
+import threading
+import time
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs, quote
 from urllib.request import urlopen, Request
@@ -31,10 +33,21 @@ DEFAULT_PORT = 38080
 MAX_JSON_BODY = 256 * 1024
 MAX_IMAGE_BODY = 10 * 1024 * 1024
 
-# fnOS 更新管理器接入
-UPDATE_MANAGER_URL = os.environ.get("FNOS_UPDATE_URL", "http://nas.192321.xyz:18080").rstrip("/")
+# fnOS 更新管理器接入（多更新源 + GitHub 兜底）
+UPDATE_SERVER_URLS = [u.strip().rstrip("/") for u in os.environ.get(
+    "FNOS_UPDATE_URLS",
+    "http://nas1.192321.xyz:18080,http://nas.192321.xyz:18080,http://nas.192322.xyz:18080",
+).split(",") if u.strip()]
 UPDATE_APP_KEY = os.environ.get("FNOS_UPDATE_APP_KEY", "fnos-share-customizer")
 UPDATE_CHANNEL = os.environ.get("FNOS_UPDATE_CHANNEL", "stable")
+GITHUB_RELEASES_URL = os.environ.get(
+    "FNOS_GITHUB_RELEASES_URL",
+    "https://github.com/cjm2004/fnos-share-customizer/releases",
+)
+GITHUB_API_URL = os.environ.get(
+    "FNOS_GITHUB_API_URL",
+    "https://api.github.com/repos/cjm2004/fnos-share-customizer/releases/latest",
+)
 
 
 def app_version():
@@ -56,6 +69,54 @@ def app_version():
 
 
 APP_VERSION = app_version()
+
+
+def version_tuple(value):
+    parts = re.findall(r"\d+", str(value or ""))
+    return tuple(int(p) for p in parts)
+
+
+def fetch_update_json(url, timeout=6):
+    req = Request(url, headers={
+        "Accept": "application/json",
+        "User-Agent": "fnos-share-customizer/" + APP_VERSION,
+    })
+    with urlopen(req, timeout=timeout) as resp:
+        raw = resp.read().decode("utf-8", "replace")
+    return json.loads(raw)
+
+
+def probe_update_server(base):
+    query = "app_key=%s&current_version=%s&channel=%s" % (
+        quote(UPDATE_APP_KEY), quote(APP_VERSION), quote(UPDATE_CHANNEL))
+    entry = {"url": base, "reachable": False, "elapsed_ms": 0, "error": "", "data": None}
+    start = time.time()
+    try:
+        entry["data"] = fetch_update_json("%s/api/check-update?%s" % (base, query), timeout=6)
+        entry["reachable"] = True
+    except HTTPError as exc:
+        entry["error"] = "HTTP %s" % exc.code
+    except Exception as exc:                      # noqa: BLE001
+        entry["error"] = str(exc)
+    entry["elapsed_ms"] = int((time.time() - start) * 1000)
+    return entry
+
+
+def check_github_version():
+    gh = {"url": GITHUB_RELEASES_URL, "version": "", "newer": False,
+          "asset_url": "", "release_url": "", "error": ""}
+    try:
+        data = fetch_update_json(GITHUB_API_URL, timeout=6)
+        gh["version"] = data.get("tag_name") or ""
+        gh["release_url"] = data.get("html_url") or ""
+        for asset in data.get("assets") or []:
+            if str(asset.get("name", "")).lower().endswith(".fpk"):
+                gh["asset_url"] = asset.get("browser_download_url") or ""
+                break
+        gh["newer"] = bool(gh["version"]) and version_tuple(gh["version"]) > version_tuple(APP_VERSION)
+    except Exception as exc:                      # noqa: BLE001
+        gh["error"] = str(exc)
+    return gh
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(os.path.join(STATE_DIR, "backups"), exist_ok=True)
@@ -432,30 +493,73 @@ class CustomizerHandler(BaseHTTPRequestHandler):
         })
 
     def _check_update(self):
-        """代理 fnOS 更新管理器的 check-update 接口，规避浏览器跨域限制。"""
-        url = ("%s/api/check-update?app_key=%s&current_version=%s&channel=%s"
-               % (UPDATE_MANAGER_URL, quote(UPDATE_APP_KEY), quote(APP_VERSION), quote(UPDATE_CHANNEL)))
-        try:
-            with urlopen(Request(url), timeout=8) as resp:
-                raw = resp.read().decode("utf-8", "replace")
-            try:
-                data = json.loads(raw)
-            except ValueError:
-                data = {"update_available": False, "error": "更新服务器返回异常数据"}
-        except HTTPError as e:
-            # 404 表示软件尚未在管理器中登记，视为无可用更新而非报错。
-            try:
-                data = json.loads(e.read().decode("utf-8", "replace"))
-            except (ValueError, OSError):
-                data = {}
-            data = dict(data, update_available=False)
-            data.setdefault("error", "更新检查失败 (HTTP %d)" % e.code)
-        except (URLError, OSError) as e:
-            self._send_json({"success": False, "error": "无法连接更新服务器: %s" % e}, 502)
-            return
-        if not isinstance(data, dict):
-            data = {"update_available": False, "error": "更新服务器返回异常数据"}
-        self._send_json({"success": True, "update": data, "current_version": APP_VERSION, "app_key": UPDATE_APP_KEY})
+        """并行探测多个更新服务器，并检查 GitHub 最新版本；全不可用时返回 GitHub 入口。"""
+        results = [None] * len(UPDATE_SERVER_URLS)
+        gh_box = {}
+
+        def probe(idx, base):
+            results[idx] = probe_update_server(base)
+
+        def github_worker():
+            gh_box["gh"] = check_github_version()
+
+        threads = [threading.Thread(target=github_worker, daemon=True)]
+        for i, base in enumerate(UPDATE_SERVER_URLS):
+            threads.append(threading.Thread(target=probe, args=(i, base), daemon=True))
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(6)
+
+        results = [r for r in results if isinstance(r, dict)]
+        gh = gh_box.get("gh") or {
+            "url": GITHUB_RELEASES_URL, "version": "", "newer": False,
+            "asset_url": "", "release_url": "", "error": "GitHub 版本检查超时",
+        }
+
+        valid = [r for r in results if r.get("reachable") and isinstance(r.get("data"), dict)]
+        avail_list = [r for r in valid if r["data"].get("update_available")]
+        candidates = avail_list or valid
+        best = min(candidates, key=lambda r: r.get("elapsed_ms") or 999999) if candidates else None
+
+        github_only = False
+        if best is None:
+            update = {
+                "update_available": True, "update_mode": "optional",
+                "version": gh["version"], "release_notes": "",
+                "direct_url": "", "cloud_url": gh["url"],
+                "sha256": "", "file_name": "", "min_version": "",
+                "requires_restart": False,
+                "error": "三个更新服务器都连不上，请前往 GitHub 下载最新版本",
+            }
+            github_only = True
+        else:
+            update = dict(best["data"])
+            avail = bool(update.get("update_available"))
+            if not avail and gh.get("newer"):
+                update = {
+                    "update_available": True, "update_mode": "optional",
+                    "version": gh["version"], "release_notes": "",
+                    "direct_url": "", "cloud_url": gh["url"],
+                    "sha256": "", "file_name": "", "min_version": "",
+                    "requires_restart": False,
+                    "error": "更新服务器还没有发布新版本，GitHub 已有 %s，请前往下载"
+                             % (gh["version"] or "新版本"),
+                }
+                github_only = True
+            if not update.get("update_mode"):
+                update["update_mode"] = "optional" if update.get("update_available") else "none"
+
+        self._send_json({
+            "success": True,
+            "update": update,
+            "current_version": APP_VERSION,
+            "app_key": UPDATE_APP_KEY,
+            "base_url": best.get("url", "") if best else "",
+            "servers": results,
+            "github": gh,
+            "github_only": github_only,
+        })
 
     def _serve_logo(self):
         path = LOGO_PATH
